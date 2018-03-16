@@ -68,6 +68,10 @@ CHECK_POSITION_LIMITS = False
 MIN_POSITION = -10000
 MAX_POSITION = 10000
 
+# If rate of return is below that limit then the active position
+# gets closed at market price
+STOP_LIMIT=-500
+
 # If True, will only send orders that rest in the book (ExecInst: ParticipateDoNotInitiate).
 # Use to guarantee a maker rebate.
 # However -- orders that would have matched immediately will instead cancel, and you may end up with

@@ -245,6 +245,8 @@ class OrderManager:
         logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))
         logger.info("Current Contract Position: %d" % self.running_qty)
         logger.info("\033[31mCurrent Unrealised PNL: %.2f \033[0m" % unrealised)
+
+        logger.info("Stop limit: %d" % (settings.STOP_LIMIT))
         #  for k, v in self.exchange.get_position().items():
             #  print(k, v)
         if settings.CHECK_POSITION_LIMITS:
@@ -505,6 +507,14 @@ class OrderManager:
 
         sys.exit()
 
+    def stop_loss(self):
+        unrealised = self.exchange.get_unrealised() * 100
+        if ((unrealised <= settings.STOP_LIMIT) and
+                (self.short_position_limit_exceeded() or
+                 self.long_position_limit_exceeded())):
+            logger.info("STOP LOSS hit. Close open positon at market price")
+            self.exchange.bitmex.close()
+
     def run_loop(self):
         while True:
             sys.stdout.write("-----\n")
@@ -521,6 +531,7 @@ class OrderManager:
 
             self.sanity_check()  # Ensures health of mm - several cut-out points here
             self.print_status()  # Print skew, delta, etc
+            self.stop_loss()     # Rate of return is below stop loss close position
             self.place_orders()  # Creates desired orders and converges to existing orders
 
     def restart(self):

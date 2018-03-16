@@ -207,6 +207,16 @@ class BitMEX(object):
         return self._curl_bitmex(path=path, postdict=postdict, verb="DELETE")
 
     @authentication_required
+    def close(self):
+        """Close existing positon."""
+        path = "order/closePosition"
+        postdict = {
+            'symbol': self.symbol,
+            'execInst': 'Close',
+        }
+        return self._curl_bitmex(path=path, postdict=postdict, verb="POST")
+
+    @authentication_required
     def withdraw(self, amount, fee, address):
         path = "user/requestWithdrawal"
         postdict = {
