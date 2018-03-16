@@ -127,6 +127,11 @@ class ExchangeInterface:
             symbol = self.symbol
         return self.get_position(symbol)['currentQty']
 
+    def get_unrealised(self, symbol=None):
+        if symbol is None:
+            symbol = self.symbol
+        return self.get_position(symbol)['unrealisedRoePcnt']
+
     def get_instrument(self, symbol=None):
         if symbol is None:
             symbol = self.symbol
@@ -233,11 +238,15 @@ class OrderManager:
         margin = self.exchange.get_margin()
         position = self.exchange.get_position()
         self.running_qty = self.exchange.get_delta()
+        unrealised = self.exchange.get_unrealised() * 100
         tickLog = self.exchange.get_instrument()['tickLog']
         self.start_XBt = margin["marginBalance"]
 
         logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))
         logger.info("Current Contract Position: %d" % self.running_qty)
+        logger.info("\033[31mCurrent Unrealised PNL: %.2f \033[0m" % unrealised)
+        #  for k, v in self.exchange.get_position().items():
+            #  print(k, v)
         if settings.CHECK_POSITION_LIMITS:
             logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
         if position['currentQty'] != 0:

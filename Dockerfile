@@ -10,7 +10,7 @@ WORKDIR /app
 
 RUN pip install -r requirements.txt
 
-COPY sample-market-maker /app
+COPY . /app
 
 RUN pip install -e $(pwd)
 
