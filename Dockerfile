@@ -2,6 +2,8 @@ FROM python:3.6
 
 # RUN pip install bitmex-market-maker
 
+RUN apt-get update && apt-get -y install vim
+
 RUN mkdir /app
 
 COPY requirements.txt /app

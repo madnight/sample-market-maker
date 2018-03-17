@@ -335,6 +335,16 @@ class OrderManager:
 
         return self.converge_orders(buy_orders, sell_orders)
 
+    def rebalance(self, quantity, index):
+        """ If out position is to big on one side we try to rebalance
+        the position by increasing the order size on the other side """
+        self.running_qty = self.exchange.get_delta()
+        if self.running_qty < (settings.MIN_POSITION / 2) and index < 0:
+            return quantity * settings.REBALANCE_FACTOR
+        if self.running_qty > (settings.MAX_POSITION / 2) and index >= 0:
+            return quantity * settings.REBALANCE_FACTOR
+        return quantity
+
     def prepare_order(self, index):
         """Create an order object."""
 
@@ -344,6 +354,7 @@ class OrderManager:
             quantity = settings.ORDER_START_SIZE + ((abs(index) - 1) * settings.ORDER_STEP_SIZE)
 
         price = self.get_price_offset(index)
+        quantity = int(round(self.rebalance(quantity, index)))
 
         return {'price': price, 'orderQty': quantity, 'side': "Buy" if index < 0 else "Sell"}
 
@@ -419,6 +430,7 @@ class OrderManager:
             logger.info("Creating %d orders:" % (len(to_create)))
             for order in reversed(to_create):
                 logger.info("%4s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
+
             self.exchange.create_bulk_orders(to_create)
 
         # Could happen if we exceed a delta limit
@@ -508,12 +520,18 @@ class OrderManager:
         sys.exit()
 
     def stop_loss(self):
+        ticker = self.exchange.get_ticker()
         unrealised = self.exchange.get_unrealised() * 100
+        self.running_qty = self.exchange.get_delta()
         if ((unrealised <= settings.STOP_LIMIT) and
                 (self.short_position_limit_exceeded() or
                  self.long_position_limit_exceeded())):
-            logger.info("STOP LOSS hit. Close open positon at market price")
-            self.exchange.bitmex.close()
+            logger.info("STOP LOSS hit. Stop Limit Order is set.")
+            if self.running_qty < 0: # we are short
+                self.exchange.bitmex.buy(self.running_qty, self.start_position_buy)
+            else: # we are long
+                self.exchange.bitmex.sell(self.running_qty, self.start_position_sell)
+                #  self.exchange.bitmex.close()
 
     def run_loop(self):
         while True:
@@ -531,7 +549,7 @@ class OrderManager:
 
             self.sanity_check()  # Ensures health of mm - several cut-out points here
             self.print_status()  # Print skew, delta, etc
-            self.stop_loss()     # Rate of return is below stop loss close position
+            #  self.stop_loss()     # Rate of return is below stop loss close position
             self.place_orders()  # Creates desired orders and converges to existing orders
 
     def restart(self):

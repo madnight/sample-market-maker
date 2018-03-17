@@ -16,14 +16,14 @@ class CustomOrderManager(OrderManager):
         # buy_orders.append({'price': 999.0, 'orderQty': 100, 'side': "Buy"})
         # sell_orders.append({'price': 1001.0, 'orderQty': 100, 'side': "Sell"})
 
-        self.converge_orders(buy_orders, sell_orders)
+        #  self.converge_orders(buy_orders, sell_orders)
 
 
-def run() -> None:
-    order_manager = CustomOrderManager()
+#  def run() -> None:
+    #  order_manager = CustomOrderManager()
 
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
-    try:
-        order_manager.run_loop()
-    except (KeyboardInterrupt, SystemExit):
-        sys.exit()
+    #  try:
+        #  order_manager.run_loop()
+    #  except (KeyboardInterrupt, SystemExit):
+        #  sys.exit()

@@ -72,6 +72,14 @@ MAX_POSITION = 10000
 # gets closed at market price
 STOP_LIMIT=-500
 
+# If out position is to big on one side we try to rebalance
+# the position by increasing the order size on the other side
+# A REBALANCE_FACTOR of 1 equals to off
+# e.g. 1.2 equals +20%
+# only positive factors make sense
+REBALANCE_FACTOR=1
+
+
 # If True, will only send orders that rest in the book (ExecInst: ParticipateDoNotInitiate).
 # Use to guarantee a maker rebate.
 # However -- orders that would have matched immediately will instead cancel, and you may end up with
