@@ -371,9 +371,15 @@ class OrderManager:
         sells_matched = 0
         existing_orders = self.exchange.get_orders()
 
+        existing_orders[:] = [d for d in existing_orders if "sl_bitmex" not in d.get('orderID')]
+
+        #  print(existing_orders)
+
         # Check all existing orders and match them up with what we want to place.
         # If there's an open one, we might be able to amend it to fit what we want.
         for order in existing_orders:
+            if "sl_bitmex" in order['orderID']:
+                continue
             try:
                 if order['side'] == 'Buy':
                     desired_order = buy_orders[buys_matched]
@@ -520,17 +526,26 @@ class OrderManager:
         sys.exit()
 
     def stop_loss(self):
+        existing_orders = self.exchange.get_orders()
+        for order in existing_orders:
+            if "sl_bitmex" in order['orderID']:
+                self.cancel_order(order)
         ticker = self.exchange.get_ticker()
         unrealised = self.exchange.get_unrealised() * 100
+        ticker = self.exchange.get_ticker()
         self.running_qty = self.exchange.get_delta()
         if ((unrealised <= settings.STOP_LIMIT) and
                 (self.short_position_limit_exceeded() or
                  self.long_position_limit_exceeded())):
             logger.info("STOP LOSS hit. Stop Limit Order is set.")
             if self.running_qty < 0: # we are short
-                self.exchange.bitmex.buy(self.running_qty, self.start_position_buy)
+                buy = math.toNearest(ticker["buy"], self.instrument['tickSize'])
+                self.exchange.bitmex.close_limit(-self.running_qty, buy)
+                logger.info("Stop Limit Buy Order is set.")
             else: # we are long
-                self.exchange.bitmex.sell(self.running_qty, self.start_position_sell)
+                sell = math.toNearest(ticker["sell"], self.instrument['tickSize'])
+                self.exchange.bitmex.sell(-self.running_qty, sell)
+                logger.info("Stop Limit Sell Order is set.")
                 #  self.exchange.bitmex.close()
 
     def run_loop(self):
@@ -549,7 +564,7 @@ class OrderManager:
 
             self.sanity_check()  # Ensures health of mm - several cut-out points here
             self.print_status()  # Print skew, delta, etc
-            #  self.stop_loss()     # Rate of return is below stop loss close position
+            self.stop_loss()     # Rate of return is below stop loss close position
             self.place_orders()  # Creates desired orders and converges to existing orders
 
     def restart(self):

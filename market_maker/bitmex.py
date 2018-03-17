@@ -224,12 +224,12 @@ class BitMEX(object):
 
         endpoint = "order"
         # Generate a unique clOrdID with our prefix so we can identify it.
-        clOrdID = "stop_limit" + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
+        id = 'sl_bitmex_' + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
         postdict = {
             'symbol': self.symbol,
             'orderQty': quantity,
             'price': price,
-            'clOrdID': clOrdID
+            'clOrdID': id
         }
         if self.postOnly:
             postdict['execInst'] = 'ParticipateDoNotInitiate'
