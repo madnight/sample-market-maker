@@ -207,33 +207,16 @@ class BitMEX(object):
         return self._curl_bitmex(path=path, postdict=postdict, verb="DELETE")
 
     @authentication_required
-    def close(self):
+    def close(self, quantity):
         """Close existing positon."""
-        path = "order/closePosition"
+        path = "order"
         postdict = {
             'symbol': self.symbol,
-            'execInst': 'Close',
+            'ordType': 'Market',
+            'orderQty': quantity,
+            'execInst': 'ReduceOnly',
         }
         return self._curl_bitmex(path=path, postdict=postdict, verb="POST")
-
-    @authentication_required
-    def close_limit(self, quantity, price):
-        """Place an order."""
-        if price < 0:
-            raise Exception("Price must be positive.")
-
-        endpoint = "order"
-        # Generate a unique clOrdID with our prefix so we can identify it.
-        id = 'sl_bitmex_' + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
-        postdict = {
-            'symbol': self.symbol,
-            'orderQty': quantity,
-            'price': price,
-            'clOrdID': id
-        }
-        if self.postOnly:
-            postdict['execInst'] = 'ParticipateDoNotInitiate'
-        return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
 
     @authentication_required
     def withdraw(self, amount, fee, address):

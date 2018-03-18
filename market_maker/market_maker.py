@@ -371,15 +371,9 @@ class OrderManager:
         sells_matched = 0
         existing_orders = self.exchange.get_orders()
 
-        existing_orders[:] = [d for d in existing_orders if "sl_bitmex" not in d.get('orderID')]
-
-        #  print(existing_orders)
-
         # Check all existing orders and match them up with what we want to place.
         # If there's an open one, we might be able to amend it to fit what we want.
         for order in existing_orders:
-            if "sl_bitmex" in order['orderID']:
-                continue
             try:
                 if order['side'] == 'Buy':
                     desired_order = buy_orders[buys_matched]
@@ -526,27 +520,17 @@ class OrderManager:
         sys.exit()
 
     def stop_loss(self):
-        existing_orders = self.exchange.get_orders()
-        for order in existing_orders:
-            if "sl_bitmex" in order['orderID']:
-                self.cancel_order(order)
-        ticker = self.exchange.get_ticker()
         unrealised = self.exchange.get_unrealised() * 100
-        ticker = self.exchange.get_ticker()
-        self.running_qty = self.exchange.get_delta()
+        running_qty = self.exchange.get_delta()
+        stop_quantity = int(round(settings.ORDER_START_SIZE / 3))
         if ((unrealised <= settings.STOP_LIMIT) and
                 (self.short_position_limit_exceeded() or
                  self.long_position_limit_exceeded())):
-            logger.info("STOP LOSS hit. Stop Limit Order is set.")
-            if self.running_qty < 0: # we are short
-                buy = math.toNearest(ticker["buy"], self.instrument['tickSize'])
-                self.exchange.bitmex.close_limit(-self.running_qty, buy)
-                logger.info("Stop Limit Buy Order is set.")
-            else: # we are long
-                sell = math.toNearest(ticker["sell"], self.instrument['tickSize'])
-                self.exchange.bitmex.sell(-self.running_qty, sell)
-                logger.info("Stop Limit Sell Order is set.")
-                #  self.exchange.bitmex.close()
+            logger.info("STOP LOSS hit. Stop Market Order is triggered.")
+            if running_qty < 0:
+                self.exchange.bitmex.close(stop_quantity)
+            else:
+                self.exchange.bitmex.close(-stop_quantity)
 
     def run_loop(self):
         while True:
