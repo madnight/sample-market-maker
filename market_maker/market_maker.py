@@ -522,15 +522,13 @@ class OrderManager:
     def stop_loss(self):
         unrealised = self.exchange.get_unrealised() * 100
         running_qty = self.exchange.get_delta()
-        stop_quantity = int(round(settings.ORDER_START_SIZE / 3))
         if ((unrealised <= settings.STOP_LIMIT) and
                 (self.short_position_limit_exceeded() or
                  self.long_position_limit_exceeded())):
             logger.info("STOP LOSS hit. Stop Market Order is triggered.")
-            if running_qty < 0:
-                self.exchange.bitmex.close(stop_quantity)
-            else:
-                self.exchange.bitmex.close(-stop_quantity)
+            self.exchange.bitmex.close_full()
+            self.exchange.cancel_all_orders()
+            sleep(15*60) # we sleep 15 min and wait until the market calmed down
 
     def run_loop(self):
         while True:
