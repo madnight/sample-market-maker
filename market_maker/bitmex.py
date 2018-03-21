@@ -381,4 +381,6 @@ class BitMEX(object):
         # Reset retry counter on success
         self.retries = 0
 
+        # print(response.headers['X-Ratelimit-Remaining'])
+        self.logger.info("Ratelimit Remaining: %s" % response.headers['X-Ratelimit-Remaining'])
         return response.json()

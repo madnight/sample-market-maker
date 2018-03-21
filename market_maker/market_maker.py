@@ -132,6 +132,16 @@ class ExchangeInterface:
             symbol = self.symbol
         return self.get_position(symbol)['unrealisedRoePcnt']
 
+    def get_protected_price(self, symbol=None):
+        if symbol is None:
+            symbol = self.symbol
+        return self.bitmex.instrument(symbol)['lastPriceProtected']
+
+    def get_lastprice_price(self, symbol=None):
+        if symbol is None:
+            symbol = self.symbol
+        return self.bitmex.instrument(symbol)['lastPrice']
+
     def get_instrument(self, symbol=None):
         if symbol is None:
             symbol = self.symbol
@@ -256,6 +266,12 @@ class OrderManager:
             logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
         logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+        xbt_price = float(self.exchange.get_lastprice_price())
+        index_price = float(self.exchange.get_lastprice_price('.BXBT'))
+        offset_price = xbt_price - index_price
+        logger.info("Last Price XBT Price: %.*f" % (tickLog, xbt_price))
+        logger.info("Last Price BXBT: %.*f" % (tickLog, index_price))
+        logger.info("Index Price Offset Price: %.*f" % (tickLog, (offset_price)))
 
     def get_ticker(self):
         ticker = self.exchange.get_ticker()
@@ -339,9 +355,9 @@ class OrderManager:
         """ If out position is to big on one side we try to rebalance
         the position by increasing the order size on the other side """
         self.running_qty = self.exchange.get_delta()
-        if self.running_qty < (settings.MIN_POSITION / 2) and index < 0:
+        if self.running_qty < (settings.MIN_POSITION / 3) and index < 0:
             return quantity * settings.REBALANCE_FACTOR
-        if self.running_qty > (settings.MAX_POSITION / 2) and index >= 0:
+        if self.running_qty > (settings.MAX_POSITION / 3) and index >= 0:
             return quantity * settings.REBALANCE_FACTOR
         return quantity
 
@@ -354,7 +370,7 @@ class OrderManager:
             quantity = settings.ORDER_START_SIZE + ((abs(index) - 1) * settings.ORDER_STEP_SIZE)
 
         price = self.get_price_offset(index)
-        quantity = int(round(self.rebalance(quantity, index)))
+        # quantity = int(round(self.rebalance(quantity, index)))
 
         return {'price': price, 'orderQty': quantity, 'side': "Buy" if index < 0 else "Sell"}
 
@@ -522,13 +538,17 @@ class OrderManager:
     def stop_loss(self):
         unrealised = self.exchange.get_unrealised() * 100
         running_qty = self.exchange.get_delta()
+        xbt_price = float(self.exchange.get_lastprice_price())
+        index_price = float(self.exchange.get_lastprice_price('.BXBT'))
+        offset_price = xbt_price - index_price
         if ((unrealised <= settings.STOP_LIMIT) and
                 (self.short_position_limit_exceeded() or
                  self.long_position_limit_exceeded())):
-            logger.info("STOP LOSS hit. Stop Market Order is triggered.")
-            self.exchange.bitmex.close_full()
-            self.exchange.cancel_all_orders()
-            sleep(15*60) # we sleep 15 min and wait until the market calmed down
+            if (offset_price > -30 and offset_price < 30): # avoid extreme spikes
+                logger.info("STOP LOSS hit. Stop Market Order is triggered.")
+                self.exchange.bitmex.close_full()
+                self.exchange.cancel_all_orders()
+                sleep(15*60) # we sleep 15 min and wait until the market calmed down
 
     def run_loop(self):
         while True:
