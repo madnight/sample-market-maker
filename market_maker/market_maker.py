@@ -287,15 +287,15 @@ class OrderManager:
         # make sure they're not ours. If they are, we need to adjust, otherwise we'll
         # just work the orders inward until they collide.
         if settings.MAINTAIN_SPREADS:
-            if ticker['buy'] == self.exchange.get_highest_buy()['price']:
-                self.start_position_buy = ticker["buy"]
-            if ticker['sell'] == self.exchange.get_lowest_sell()['price']:
-                self.start_position_sell = ticker["sell"]
+            #if ticker['buy'] == self.exchange.get_highest_buy()['price']:
+            self.start_position_buy = ticker["buy"]
+            #if ticker['sell'] == self.exchange.get_lowest_sell()['price']:
+            self.start_position_sell = ticker["sell"]
 
         # Back off if our spread is too small.
-        if self.start_position_buy * (1.00 + settings.MIN_SPREAD) > self.start_position_sell:
-            self.start_position_buy *= (1.00 - (settings.MIN_SPREAD / 2))
-            self.start_position_sell *= (1.00 + (settings.MIN_SPREAD / 2))
+        if self.start_position_buy >= self.start_position_sell:
+            self.start_position_buy -= 0.5 # (1.00 - (settings.MIN_SPREAD / 2))
+            self.start_position_sell += 0.5 # (1.00 + (settings.MIN_SPREAD / 2))
 
         # Midpoint, used for simpler order placement.
         self.start_position_mid = ticker["mid"]
