@@ -86,7 +86,7 @@ class BitMEXWebsocket():
         matchingInstruments = [i for i in instruments if i['symbol'] == symbol]
         if len(matchingInstruments) == 0:
             raise Exception("Unable to find instrument or index with symbol: " + symbol)
-        instrument = matchingInstruments[0]
+        instrument = matchingInstruments[-1]
         return instrument
 
     def get_ticker(self, symbol):
