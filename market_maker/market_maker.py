@@ -552,8 +552,10 @@ class OrderManager:
 
     def run_loop(self):
         while True:
-            sys.stdout.write("-----\n")
-            sys.stdout.flush()
+            INFO = 20
+            if logger.getEffectiveLevel() == INFO:
+                sys.stdout.write("-----\n")
+                sys.stdout.flush()
 
             self.check_file_change()
             sleep(settings.LOOP_INTERVAL)
