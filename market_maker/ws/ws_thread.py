@@ -81,10 +81,19 @@ class BitMEXWebsocket():
         instrument['tickLog'] = decimal.Decimal(str(instrument['tickSize'])).as_tuple().exponent * -1
         return instrument
 
+    def get_quote(self, symbol):
+        instruments = self.data['quote']
+        matchingInstruments = [i for i in instruments if i['symbol'] == symbol]
+        if len(matchingInstruments) == 0:
+            raise Exception("Unable to find instrument or index with symbol: " + symbol)
+        instrument = matchingInstruments[0]
+        return instrument
+
     def get_ticker(self, symbol):
         '''Return a ticker object. Generated from instrument.'''
 
         instrument = self.get_instrument(symbol)
+        quote = self.get_quote(symbol)
 
         # If this is an index, we have to get the data from the last trade.
         if instrument['symbol'][0] == '.':
@@ -92,8 +101,8 @@ class BitMEXWebsocket():
             ticker['mid'] = ticker['buy'] = ticker['sell'] = ticker['last'] = instrument['markPrice']
         # Normal instrument
         else:
-            bid = instrument['bidPrice'] or instrument['lastPrice']
-            ask = instrument['askPrice'] or instrument['lastPrice']
+            bid = quote['bidPrice'] or instrument['lastPrice']
+            ask = quote['askPrice'] or instrument['lastPrice']
             ticker = {
                 "last": instrument['lastPrice'],
                 "buy": bid,
