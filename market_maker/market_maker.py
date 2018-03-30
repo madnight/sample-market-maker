@@ -130,7 +130,7 @@ class ExchangeInterface:
     def get_unrealised(self, symbol=None):
         if symbol is None:
             symbol = self.symbol
-        return self.get_position(symbol)['unrealisedRoePcnt']
+        return self.get_position(symbol).get('unrealisedRoePcnt', 0)
 
     def get_protected_price(self, symbol=None):
         if symbol is None:
