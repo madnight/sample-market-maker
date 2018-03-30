@@ -106,7 +106,9 @@ class BitMEXWebsocket():
             ticker = {
                 "last": instrument['lastPrice'],
                 "buy": bid,
+                "buySize": quote['bidSize'],
                 "sell": ask,
+                "sellSize": quote['askSize'],
                 "mid": (bid + ask) / 2
             }
 

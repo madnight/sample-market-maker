@@ -330,6 +330,10 @@ class OrderManager:
 
         return math.toNearest(start_position * (1 + settings.INTERVAL) ** index, self.instrument['tickSize'])
 
+    def quote_side_buy(self):
+        ticker = self.exchange.get_ticker()
+        return ticker['buySize'] > ticker['sellSize']
+
     ###
     # Orders
     ###
@@ -345,9 +349,15 @@ class OrderManager:
         # down and a new order would be created at the outside.
         for i in reversed(range(1, settings.ORDER_PAIRS + 1)):
             if not self.long_position_limit_exceeded():
-                buy_orders.append(self.prepare_order(-i))
+                if ((settings.QUOTE_SIDE_GREATER
+                     and self.quote_side_buy())
+                     or self.short_position_limit_exceeded()):
+                    buy_orders.append(self.prepare_order(-i))
             if not self.short_position_limit_exceeded():
-                sell_orders.append(self.prepare_order(i))
+                if ((settings.QUOTE_SIDE_GREATER
+                     and not self.quote_side_buy())
+                     or self.long_position_limit_exceeded()):
+                    sell_orders.append(self.prepare_order(i))
 
         return self.converge_orders(buy_orders, sell_orders)
 
